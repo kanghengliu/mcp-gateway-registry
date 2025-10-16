@@ -1,9 +1,10 @@
 # MCP Client CLI Guide
 
-This guide documents how to interact with MCP servers using the `mcp_client.py` command-line interface.
+This guide documents how to interact with MCP servers using both Ink-based CLI experience and the existing Python `mcp_client.py` command-line interface.
 
 ## Table of Contents
 - [Overview](#overview)
+- [Ink CLI (Interactive)](#ink-cli-interactive)
 - [Authentication](#authentication)
 - [Basic Commands](#basic-commands)
 - [Server Management Commands](#server-management-commands)
@@ -12,7 +13,53 @@ This guide documents how to interact with MCP servers using the `mcp_client.py` 
 
 ## Overview
 
-The `mcp_client.py` tool is a command-line interface for interacting with MCP servers through the gateway. It supports various operations including server registration, listing, removal, and tool invocation.
+You now have two choices:
+- `cli/src/index.tsx` — An interactive Ink CLI with rich terminal UI, quick command shortcuts, and JSON viewer support.
+- `cli/mcp_client.py` — The original Python CLI that remains available for scripting, automation, or environments without Node.js.
+
+Both clients share the same authentication rules and produce identical JSON payloads for `ping`, `list`, `call`, and `init`.
+
+## Ink CLI (Interactive)
+
+The Ink CLI provides a guided TUI powered by [Ink](https://github.com/vadimdemedes/ink) and `tsx`. It automatically discovers ingress tokens, supports Keycloak M2M flows, and lets you run the same MCP commands in either interactive or scripted mode.
+
+### Quick start
+```bash
+cd cli
+npm install   # installs Ink, React, and TypeScript helpers
+npm run start # launches the interactive menu (use `npm run dev` for watch mode)
+```
+
+Key bindings:
+- Use `↑`/`↓` to pick an action, `↵` to confirm, `q` to exit.
+- For `Call a tool…`, enter the tool name, then JSON arguments; leave arguments blank to send `{}`.
+- Press `Esc` when editing inputs to cancel and return to the menu.
+
+The status header shows which tokens were detected and highlights upcoming expirations.
+
+The main menu also links to the legacy management scripts, so you can drive them without leaving the Ink UI:
+- **Gateway service toolkit** – wraps `service_mgmt.sh` for add/delete/monitor tasks and group management.
+- **Registry imports** – runs `import_from_anthropic_registry.sh` with either dry-run or apply modes.
+- **User & M2M management** – shells into `user_mgmt.sh` for Keycloak-backed account administration.
+- **API diagnostics** – executes `test_anthropic_api.py` via `uv run` for Anthropic v0 smoke tests.
+
+### Non-interactive usage
+You can run the same entry-point in batch mode for pipelines or quick checks:
+```bash
+# Equivalent to `python3 cli/mcp_client.py ping`
+npx tsx src/index.tsx -- --command ping --url http://localhost:7860/mcpgw/mcp
+
+# Explicit token file with JSON output
+npx tsx src/index.tsx -- --command list --token-file ~/.mcp/ingress_token --json
+
+# Call a tool
+npx tsx src/index.tsx -- \
+	--command call \
+	--tool current_time_by_timezone \
+	--args '{"tz_name":"America/New_York"}'
+```
+
+> 💡 Append `--interactive` to force the menu even when a command is provided, or `--no-interactive` to suppress any UI.
 
 ## Authentication
 
@@ -60,8 +107,8 @@ uv run cli/mcp_client.py --url http://localhost/currenttime/mcp list
 ### List All Registered Services
 ```bash
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool list_services \
-  --args '{}'
+	--tool list_services \
+	--args '{}'
 ```
 
 Returns a dictionary containing:
@@ -71,8 +118,8 @@ Returns a dictionary containing:
 ### Register a New Service
 ```bash
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool register_service \
-  --args '{
+	--tool register_service \
+	--args '{
     "server_name": "Minimal Server",
     "path": "/minimal-server",
     "proxy_pass_url": "http://minimal-server:8000",
@@ -89,8 +136,8 @@ uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
 ```bash
 # Register a service using configuration from a JSON file
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool register_service \
-  --args "$(cat cli/examples/server-config.json)"
+	--tool register_service \
+	--args "$(cat cli/examples/server-config.json)"
 ```
 
 **Required parameters:**
@@ -109,31 +156,31 @@ uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
 ### Remove a Service
 ```bash
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool remove_service \
-  --args '{"service_path": "/my-service"}'
+	--tool remove_service \
+	--args '{"service_path": "/my-service"}'
 ```
 
 **Example:**
 ```bash
 # Remove minimal-server
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool remove_service \
-  --args '{"service_path": "/minimal-server"}'
+	--tool remove_service \
+	--args '{"service_path": "/minimal-server"}'
 ```
 
 ### Toggle Service State (Enable/Disable)
 ```bash
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool toggle_service \
-  --args '{"service_path": "/my-service"}'
+	--tool toggle_service \
+	--args '{"service_path": "/my-service"}'
 ```
 
 ### Health Check
 Get health status for all registered servers:
 ```bash
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool healthcheck \
-  --args '{}'
+	--tool healthcheck \
+	--args '{}'
 ```
 
 ## Tool Discovery
@@ -144,18 +191,18 @@ Use the intelligent tool finder to discover tools based on natural language quer
 ```bash
 # Find tools for getting current time
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool intelligent_tool_finder \
-  --args '{"natural_language_query": "get current time in New York", "top_n_tools": 3}'
+	--tool intelligent_tool_finder \
+	--args '{"natural_language_query": "get current time in New York", "top_n_tools": 3}'
 
 # Find tools by tags only
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool intelligent_tool_finder \
-  --args '{"tags": ["time", "timezone"], "top_n_tools": 5}'
+	--tool intelligent_tool_finder \
+	--args '{"tags": ["time", "timezone"], "top_n_tools": 5}'
 
 # Combine natural language and tags
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool intelligent_tool_finder \
-  --args '{
+	--tool intelligent_tool_finder \
+	--args '{
     "natural_language_query": "get current time",
     "tags": ["time"],
     "top_k_services": 3,
@@ -177,13 +224,13 @@ uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
 ```bash
 # Get current time in a specific timezone
 uv run cli/mcp_client.py --url http://localhost/currenttime/mcp call \
-  --tool current_time_by_timezone \
-  --args '{"tz_name": "America/New_York"}'
+	--tool current_time_by_timezone \
+	--args '{"tz_name": "America/New_York"}'
 
 # Use default timezone (America/New_York)
 uv run cli/mcp_client.py --url http://localhost/currenttime/mcp call \
-  --tool current_time_by_timezone \
-  --args '{}'
+	--tool current_time_by_timezone \
+	--args '{}'
 ```
 
 ## Command Structure
@@ -208,18 +255,18 @@ uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call --tool list_servi
 
 # Register a new service
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool register_service \
-  --args '{"server_name": "Minimal Server", "path": "/minimal-server", "proxy_pass_url": "http://minimal-server:8000"}'
+	--tool register_service \
+	--args '{"server_name": "Minimal Server", "path": "/minimal-server", "proxy_pass_url": "http://minimal-server:8000"}'
 
 # Remove a service
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool remove_service \
-  --args '{"service_path": "/minimal-server"}'
+	--tool remove_service \
+	--args '{"service_path": "/minimal-server"}'
 
 # Toggle service state
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call \
-  --tool toggle_service \
-  --args '{"service_path": "/minimal-server"}'
+	--tool toggle_service \
+	--args '{"service_path": "/minimal-server"}'
 
 # Health check all services
 uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call --tool healthcheck --args '{}'
@@ -229,12 +276,12 @@ uv run cli/mcp_client.py --url http://localhost/mcpgw/mcp call --tool healthchec
 ```bash
 # Find relevant tools
 uv run cli/mcp_client.py call --tool intelligent_tool_finder \
-  --args '{"natural_language_query": "get current time"}'
+	--args '{"natural_language_query": "get current time"}'
 
 # Call a specific tool directly
 uv run cli/mcp_client.py --url http://localhost/currenttime/mcp call \
-  --tool current_time_by_timezone \
-  --args '{"tz_name": "Europe/London"}'
+	--tool current_time_by_timezone \
+	--args '{"tz_name": "Europe/London"}'
 ```
 
 ## Troubleshooting
