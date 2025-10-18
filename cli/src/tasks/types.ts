@@ -15,6 +15,8 @@ export interface ScriptCommand {
 export interface TaskContext {
   gatewayUrl: string;
   gatewayBaseUrl: string;
+  gatewayToken?: string;
+  backendToken?: string;
 }
 
 export interface ScriptTask {

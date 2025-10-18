@@ -21,27 +21,53 @@ Both clients share the same authentication rules and produce identical JSON payl
 
 ## Ink CLI (Interactive)
 
-The Ink CLI provides a guided TUI powered by [Ink](https://github.com/vadimdemedes/ink) and `tsx`. It automatically discovers ingress tokens, supports Keycloak M2M flows, and lets you run the same MCP commands in either interactive or scripted mode.
+The Ink CLI now behaves like a chat-style operator powered by [Ink](https://github.com/vadimdemedes/ink) and `tsx`. It automatically discovers ingress tokens, supports Keycloak M2M flows, and lets you mix natural questions with explicit `/commands` to drive the registry tooling.
 
 ### Quick start
 ```bash
 cd cli
 npm install   # installs Ink, React, and TypeScript helpers
-npm run start # launches the interactive menu (use `npm run dev` for watch mode)
+npm run start # launches the conversational CLI (use `npm run dev` for watch mode)
 ```
 
-Key bindings:
-- Use `↑`/`↓` to pick an action, `↵` to confirm, `q` to exit.
-- For `Call a tool…`, enter the tool name, then JSON arguments; leave arguments blank to send `{}`.
-- Press `Esc` when editing inputs to cancel and return to the menu.
+What to expect:
+- The header reports which tokens were discovered and when they expire.
+- Type messages freely; start a slash-command to run something immediately.
+- `/help` prints the full catalogue; `/retry` re-runs authentication if needed.
+- Set `ANTHROPIC_API_KEY` in your environment to let the assistant call Claude automatically; otherwise it stays in manual mode.
 
-The status header shows which tokens were detected and highlights upcoming expirations.
+### Chat commands
 
-The main menu also links to the legacy management scripts, so you can drive them without leaving the Ink UI:
-- **Gateway service toolkit** – wraps `service_mgmt.sh` for add/delete/monitor tasks and group management.
-- **Registry imports** – runs `import_from_anthropic_registry.sh` with either dry-run or apply modes.
-- **User & M2M management** – shells into `user_mgmt.sh` for Keycloak-backed account administration.
-- **API diagnostics** – executes `test_anthropic_api.py` via `uv run` for Anthropic v0 smoke tests.
+Core MCP actions:
+- `/ping`, `/list`, `/init`
+- `/call tool=current_time_by_timezone args='{"tz_name":"America/New_York"}'`
+
+Agent mode (when `ANTHROPIC_API_KEY` is set):
+- Ask naturally (e.g. “monitor the services” or “register the currenttime config”) and Claude will decide which command to run.
+- The assistant may output intermediate tool logs before summarising the result.
+- Override the model with `ANTHROPIC_MODEL` (defaults to `claude-3-5-sonnet-latest`).
+
+Service toolkit (`service_mgmt.sh` under the hood):
+- `/service add configPath=cli/examples/server-config.json`
+- `/service delete servicePath=/example-server serviceName=example-server`
+- `/service monitor` (all services) or `/service monitor configPath=cli/examples/server-config.json`
+- `/service add-groups serverName=example-server groups=mcp-servers-restricted/read`
+- `/service create-group groupName=mcp-servers-team/read description="Team read access"`
+- `/service list-groups`
+
+Registry imports (`import_from_anthropic_registry.sh`):
+- `/import dry`
+- `/import apply importList=cli/import_server_list.txt`
+
+User & M2M management (`user_mgmt.sh`):
+- `/user create-m2m name=agent-finance groups=mcp-servers-finance/read`
+- `/user create-human username=jdoe email=jdoe@example.com firstName=John lastName=Doe groups=mcp-servers-restricted/read`
+- `/user delete username=agent-finance`
+- `/user list`, `/user list-groups`
+
+Diagnostics (`test_anthropic_api.py`):
+- `/diagnostic run-suite tokenFile=.oauth-tokens/ingress.json baseUrl=http://localhost`
+- `/diagnostic run-test tokenFile=.oauth-tokens/ingress.json testName=list-servers`
 
 ### Non-interactive usage
 You can run the same entry-point in batch mode for pipelines or quick checks:
@@ -59,7 +85,7 @@ npx tsx src/index.tsx -- \
 	--args '{"tz_name":"America/New_York"}'
 ```
 
-> 💡 Append `--interactive` to force the menu even when a command is provided, or `--no-interactive` to suppress any UI.
+> 💡 Append `--interactive` to force chat mode even when a command is provided, or `--no-interactive` to suppress any UI.
 
 ## Authentication
 
