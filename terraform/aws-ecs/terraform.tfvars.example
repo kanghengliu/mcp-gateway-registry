@@ -1,0 +1,17 @@
+# MCP Gateway Registry - Terraform Configuration Example
+# Copy this file to terraform.tfvars and update with your values
+
+# Basic Configuration
+name       = "mcp-gateway"
+aws_region = "us-east-1"
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+
+# HTTPS Configuration (Optional)
+# Provide ACM certificate ARN to enable HTTPS
+# certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxx"
+
+# Monitoring Configuration (Optional)
+enable_monitoring = true
+# alarm_email       = "ops@example.com"
