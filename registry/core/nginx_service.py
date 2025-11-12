@@ -207,10 +207,25 @@ class NginxConfigService:
             # Get API version from constants
             api_version = REGISTRY_CONSTANTS.ANTHROPIC_API_VERSION
 
+            # Parse Keycloak configuration from KEYCLOAK_URL environment variable
+            import os
+            keycloak_url = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
+            try:
+                parsed_keycloak = urlparse(keycloak_url)
+                keycloak_host = parsed_keycloak.hostname or 'keycloak'
+                keycloak_port = str(parsed_keycloak.port or 8080)
+                logger.info(f"Using Keycloak configuration from KEYCLOAK_URL: {keycloak_host}:{keycloak_port}")
+            except Exception as e:
+                logger.warning(f"Failed to parse KEYCLOAK_URL '{keycloak_url}': {e}. Using defaults.")
+                keycloak_host = 'keycloak'
+                keycloak_port = '8080'
+
             # Replace placeholders in template
             config_content = template_content.replace("{{LOCATION_BLOCKS}}", "\n".join(location_blocks))
             config_content = config_content.replace("{{ADDITIONAL_SERVER_NAMES}}", additional_server_names)
             config_content = config_content.replace("{{ANTHROPIC_API_VERSION}}", api_version)
+            config_content = config_content.replace("{{KEYCLOAK_HOST}}", keycloak_host)
+            config_content = config_content.replace("{{KEYCLOAK_PORT}}", keycloak_port)
 
             # Write config file
             with open(settings.nginx_config_path, "w") as f:

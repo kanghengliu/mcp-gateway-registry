@@ -90,24 +90,24 @@ output "service_urls" {
 # EFS outputs
 output "efs_id" {
   description = "MCP Gateway Registry EFS file system ID"
-  value       = aws_efs_file_system.mcp_efs.id
+  value       = module.efs.id
   sensitive   = false
 }
 
 output "efs_arn" {
   description = "MCP Gateway Registry EFS file system ARN"
-  value       = aws_efs_file_system.mcp_efs.arn
+  value       = module.efs.arn
   sensitive   = false
 }
 
 output "efs_access_points" {
   description = "EFS access point IDs"
   value = {
-    servers = aws_efs_access_point.servers.id
-    models  = aws_efs_access_point.models.id
-    logs    = aws_efs_access_point.logs.id
+    servers = module.efs.access_points["servers"].id
+    models  = module.efs.access_points["models"].id
+    logs    = module.efs.access_points["logs"].id
   }
-  sensitive = false
+  sensitive   = false
 }
 
 # Service Discovery outputs
@@ -170,7 +170,7 @@ output "ecs_security_group_ids" {
     auth     = module.ecs_service_auth.security_group_id
     registry = module.ecs_service_registry.security_group_id
     keycloak = module.ecs_service_keycloak.security_group_id
-    efs      = aws_security_group.efs.id
+    efs      = module.efs.security_group_id
   }
   sensitive = false
 }
@@ -205,7 +205,7 @@ output "monitoring_enabled" {
 
 output "sns_topic_arn" {
   description = "SNS topic ARN for CloudWatch alarms"
-  value       = var.enable_monitoring && var.alarm_email != "" ? aws_sns_topic.alarms[0].arn : null
+  value       = var.enable_monitoring && var.alarm_email != "" ? module.sns_alarms.topic_arn : null
 }
 
 output "autoscaling_enabled" {

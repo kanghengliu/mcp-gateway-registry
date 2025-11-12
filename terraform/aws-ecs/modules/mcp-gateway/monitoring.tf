@@ -1,17 +1,23 @@
 # CloudWatch Monitoring and Alarms for MCP Gateway
 
 # SNS Topic for Alarm Notifications
-resource "aws_sns_topic" "alarms" {
-  count = var.enable_monitoring && var.alarm_email != "" ? 1 : 0
-  name  = "${local.name_prefix}-alarms"
-  tags  = local.common_tags
-}
+module "sns_alarms" {
+  source  = "terraform-aws-modules/sns/aws"
+  version = "~> 7.0"
 
-resource "aws_sns_topic_subscription" "alarm_email" {
-  count     = var.enable_monitoring && var.alarm_email != "" ? 1 : 0
-  topic_arn = aws_sns_topic.alarms[0].arn
-  protocol  = "email"
-  endpoint  = var.alarm_email
+  create = var.enable_monitoring && var.alarm_email != ""
+
+  name            = "${local.name_prefix}-alarms-"
+  use_name_prefix = true
+
+  subscriptions = var.alarm_email != "" ? {
+    email = {
+      protocol = "email"
+      endpoint = var.alarm_email
+    }
+  } : {}
+
+  tags = local.common_tags
 }
 
 # ECS Service CPU Alarms
@@ -26,7 +32,7 @@ resource "aws_cloudwatch_metric_alarm" "auth_cpu_high" {
   statistic           = "Average"
   threshold           = 85
   alarm_description   = "Auth service CPU utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -45,7 +51,7 @@ resource "aws_cloudwatch_metric_alarm" "registry_cpu_high" {
   statistic           = "Average"
   threshold           = 85
   alarm_description   = "Registry service CPU utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -64,7 +70,7 @@ resource "aws_cloudwatch_metric_alarm" "keycloak_cpu_high" {
   statistic           = "Average"
   threshold           = 85
   alarm_description   = "Keycloak service CPU utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -84,7 +90,7 @@ resource "aws_cloudwatch_metric_alarm" "auth_memory_high" {
   statistic           = "Average"
   threshold           = 85
   alarm_description   = "Auth service memory utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -103,7 +109,7 @@ resource "aws_cloudwatch_metric_alarm" "registry_memory_high" {
   statistic           = "Average"
   threshold           = 85
   alarm_description   = "Registry service memory utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -122,7 +128,7 @@ resource "aws_cloudwatch_metric_alarm" "keycloak_memory_high" {
   statistic           = "Average"
   threshold           = 85
   alarm_description   = "Keycloak service memory utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -142,7 +148,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_targets" {
   statistic           = "Average"
   threshold           = 0
   alarm_description   = "ALB has unhealthy targets"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     LoadBalancer = module.alb.arn_suffix
@@ -161,7 +167,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   statistic           = "Sum"
   threshold           = 10
   alarm_description   = "ALB is receiving too many 5XX errors"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     LoadBalancer = module.alb.arn_suffix
@@ -180,7 +186,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_response_time" {
   statistic           = "Average"
   threshold           = 1
   alarm_description   = "ALB response time is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     LoadBalancer = module.alb.arn_suffix
@@ -199,7 +205,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "RDS CPU utilization is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     DBClusterIdentifier = module.aurora_postgresql.cluster_id
@@ -218,7 +224,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "RDS connection count is too high"
-  alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+  alarm_actions       = var.alarm_email != "" ? [module.sns_alarms.topic_arn] : []
 
   dimensions = {
     DBClusterIdentifier = module.aurora_postgresql.cluster_id

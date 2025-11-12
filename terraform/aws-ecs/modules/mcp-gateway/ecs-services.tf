@@ -34,7 +34,7 @@ module "ecs_service_auth" {
     }
   } : {}
 
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["FARGATE", "EC2"]
   capacity_provider_strategy = {
     FARGATE = {
       capacity_provider = "FARGATE"
@@ -162,8 +162,8 @@ module "ecs_service_auth" {
   volume = {
     mcp-logs = {
       efs_volume_configuration = {
-        file_system_id     = aws_efs_file_system.mcp_efs.id
-        access_point_id    = aws_efs_access_point.logs.id
+        file_system_id     = module.efs.id
+        access_point_id    = module.efs.access_points["logs"].id
         transit_encryption = "ENABLED"
       }
     }
@@ -233,7 +233,7 @@ module "ecs_service_registry" {
     }
   } : {}
 
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["FARGATE", "EC2"]
   capacity_provider_strategy = {
     FARGATE = {
       capacity_provider = "FARGATE"
@@ -385,22 +385,22 @@ module "ecs_service_registry" {
   volume = {
     mcp-servers = {
       efs_volume_configuration = {
-        file_system_id     = aws_efs_file_system.mcp_efs.id
-        access_point_id    = aws_efs_access_point.servers.id
+        file_system_id     = module.efs.id
+        access_point_id    = module.efs.access_points["servers"].id
         transit_encryption = "ENABLED"
       }
     }
     mcp-models = {
       efs_volume_configuration = {
-        file_system_id     = aws_efs_file_system.mcp_efs.id
-        access_point_id    = aws_efs_access_point.models.id
+        file_system_id     = module.efs.id
+        access_point_id    = module.efs.access_points["models"].id
         transit_encryption = "ENABLED"
       }
     }
     mcp-logs = {
       efs_volume_configuration = {
-        file_system_id     = aws_efs_file_system.mcp_efs.id
-        access_point_id    = aws_efs_access_point.logs.id
+        file_system_id     = module.efs.id
+        access_point_id    = module.efs.access_points["logs"].id
         transit_encryption = "ENABLED"
       }
     }
@@ -489,7 +489,7 @@ module "ecs_service_keycloak" {
     }
   } : {}
 
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["FARGATE", "EC2"]
   capacity_provider_strategy = {
     FARGATE = {
       capacity_provider = "FARGATE"
@@ -576,6 +576,10 @@ module "ecs_service_keycloak" {
         {
           name  = "KC_FEATURES"
           value = "token-exchange,admin-api"
+        },
+        {
+          name  = "KC_HEALTH_ENABLED"
+          value = "true"
         }
       ]
 
@@ -603,7 +607,7 @@ module "ecs_service_keycloak" {
       cloudwatch_log_group_retention_in_days = 30
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:9000/health/ready || exit 1"]
+        command     = ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000;echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: http://localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3;grep 'HTTP/1.1 200 OK' <&3"]
         interval    = 30
         timeout     = 5
         retries     = 5
@@ -615,8 +619,8 @@ module "ecs_service_keycloak" {
   volume = {
     mcp-logs = {
       efs_volume_configuration = {
-        file_system_id     = aws_efs_file_system.mcp_efs.id
-        access_point_id    = aws_efs_access_point.logs.id
+        file_system_id     = module.efs.id
+        access_point_id    = module.efs.access_points["logs"].id
         transit_encryption = "ENABLED"
       }
     }
