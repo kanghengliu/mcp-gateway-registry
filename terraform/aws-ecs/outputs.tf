@@ -85,3 +85,13 @@ output "deployment_summary" {
     autoscaling_enabled  = true
   }
 }
+
+output "registry_ecr_repository_url" {
+  description = "Private ECR repository URL for the registry image (empty when use_private_ecr = false)"
+  value       = var.use_private_ecr ? aws_ecr_repository.registry[0].repository_url : ""
+}
+
+output "auth_ecr_repository_url" {
+  description = "Private ECR repository URL for the auth server image (empty when use_private_ecr = false)"
+  value       = var.use_private_ecr ? aws_ecr_repository.auth[0].repository_url : ""
+}

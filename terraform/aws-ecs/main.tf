@@ -3,7 +3,7 @@
 
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -21,7 +21,11 @@ module "mcp_gateway" {
   source = "./modules/mcp-gateway"
 
   # Basic configuration
-  name = var.name
+  name                  = var.name
+  registry_image_uri    = local.registry_image_uri
+  auth_server_image_uri = local.auth_server_image_uri
+  alb_scheme            = var.alb_scheme
+  ingress_cidr_blocks   = var.ingress_cidr_blocks
 
   # Network configuration
   vpc_id             = module.vpc.vpc_id

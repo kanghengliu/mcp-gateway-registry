@@ -139,6 +139,28 @@ alarm_email       = "ops@example.com"  # Receives CloudWatch alarms
 
 ## 🔧 Advanced Configuration
 
+### **Build Local Images into Private ECR**
+If you can't publish to Docker Hub, Terraform can now build the registry and auth images locally and push them to a private ECR repository:
+
+```hcl
+# terraform.tfvars
+use_private_ecr     = true
+local_image_tag     = "dev"
+local_image_force_rebuild = "git-sha-2025-11-12" # bump to force a rebuild
+```
+
+What happens:
+- Terraform creates two ECR repositories (`<name>-registry` and `<name>-auth`).
+- During `terraform apply`, `docker build` runs from your local repo root for `docker/Dockerfile.registry` and `docker/Dockerfile.auth`.
+- Images are tagged as `<account-id>.dkr.ecr.<region>.amazonaws.com/<name>-registry:<local_image_tag>` (same for auth) and pushed.
+- ECS services are automatically pointed at those private images.
+
+Requirements:
+- Docker CLI and AWS CLI installed on the machine running Terraform.
+- IAM permissions to create/read ECR repositories and to push images.
+
+You can still override image URIs manually with `registry_image_override` or `auth_server_image_override` when `use_private_ecr = false`.
+
 ### **Custom Docker Images**
 To use custom-built images instead of pre-built ones:
 

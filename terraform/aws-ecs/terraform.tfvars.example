@@ -7,10 +7,19 @@ aws_region = "us-east-1"
 
 # Network Configuration
 vpc_cidr = "10.0.0.0/16"
+# alb_scheme = "internet-facing"
+# ingress_cidr_blocks = ["203.0.113.12/32"]
 
 # HTTPS Configuration (Optional)
 # Provide ACM certificate ARN to enable HTTPS
 # certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxx"
+
+# Container Image Configuration
+# use_private_ecr      = true
+# local_image_tag      = "dev"
+# registry_image_override    = "123456789012.dkr.ecr.us-east-1.amazonaws.com/mcp-gateway-registry:main"
+# auth_server_image_override = "123456789012.dkr.ecr.us-east-1.amazonaws.com/mcp-gateway-auth:main"
+# local_image_force_rebuild  = "git-commit-sha"
 
 # Monitoring Configuration (Optional)
 enable_monitoring = true
