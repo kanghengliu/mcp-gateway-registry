@@ -24,6 +24,7 @@ from registry.api.search_routes import router as search_router
 from registry.api.wellknown_routes import router as wellknown_router
 from registry.api.registry_routes import router as registry_router
 from registry.api.agent_routes import router as agent_router
+from registry.api.management_routes import router as management_router
 from registry.health.routes import router as health_router
 
 # Import auth dependencies
@@ -201,6 +202,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(servers_router, prefix="/api", tags=["Server Management"])
 app.include_router(agent_router, prefix="/api", tags=["Agent Management"])
+app.include_router(management_router, prefix="/api")
 app.include_router(search_router, prefix="/api/search", tags=["Semantic Search"])
 app.include_router(health_router, prefix="/api/health", tags=["Health Monitoring"])
 
